@@ -21,25 +21,28 @@ export const DataAPIEnergyGenerationRecordDto = z.object({
  * Fetches latest records and merges new data with existing records
  */
 export const syncMiddleware = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+    req: Request,
+    res: Response,
+    next: NextFunction
 ) => {
     try {
         const auth = getAuth(req);
         const user = await User.findOne({ clerkUserId: auth.userId });
         if (!user) {
-            throw new NotFoundError("User not found");
+            console.warn("Sync skipped: User not found");
+            return next();
         }
-        
+
         const solarUnit = await SolarUnit.findOne({ userId: user._id });
         if (!solarUnit) {
-            throw new NotFoundError("Solar unit not found");
+            console.warn("Sync skipped: Solar unit not found");
+            return next();
         }
 
         // Fetch latest records from data API
+        const dataApiUrl = process.env.DATA_API_URL || "http://localhost:3001";
         const dataAPIResponse = await fetch(
-            `http://localhost:8001/api/energy-generation-records/solar-unit/${solarUnit.serialNumber}`
+            `${dataApiUrl}/api/energy-generation-records/solar-unit/${solarUnit.serialNumber}`
         );
         if (!dataAPIResponse.ok) {
             throw new Error("Failed to fetch energy generation records from data API");
@@ -77,7 +80,7 @@ export const syncMiddleware = async (
 
         next();
     } catch (error) {
-        console.error("Sync middleware error:", error);
-        next(error);
+        console.error("Sync middleware error (proceeding anyway):", error);
+        next();
     }
 };

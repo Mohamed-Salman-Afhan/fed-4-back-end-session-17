@@ -80,13 +80,33 @@ export const getSolarUnitForUser = async (
     const auth = getAuth(req);
     const clerkUserId = auth.userId;
 
-    const user = await User.findOne({ clerkUserId });
+    let user = await User.findOne({ clerkUserId });
     if (!user) {
-      throw new NotFoundError("User not found");
+      // Lazy create user
+      console.log(`Lazy creating user for ${clerkUserId}`);
+      user = await User.create({
+        clerkUserId,
+        email: `user_${clerkUserId}@voltaris.local`, // Placeholder email
+        firstName: "Solar",
+        lastName: "User",
+        role: "staff"
+      });
     }
 
-    const solarUnits = await SolarUnit.find({ userId: user._id });
-    res.status(200).json(solarUnits[0]);
+    let solarUnit = await SolarUnit.findOne({ userId: user._id });
+    if (!solarUnit) {
+      // Lazy create solar unit
+      console.log(`Lazy creating solar unit for user ${user._id}`);
+      solarUnit = await SolarUnit.create({
+        userId: user._id,
+        serialNumber: `SU-${Date.now()}`,
+        installationDate: new Date(),
+        capacity: 5000,
+        status: "ACTIVE"
+      });
+    }
+
+    res.status(200).json(solarUnit);
   } catch (error) {
     next(error);
   }

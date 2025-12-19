@@ -3,9 +3,9 @@ import mongoose from "mongoose";
 export const connectDB = async () => {
   try {
     console.log("Connecting to MongoDB");
-    const MONGODB_URL = process.env.MONGODB_URL;
+    const MONGODB_URL = process.env.MONGO_URI;
     if (!MONGODB_URL) {
-      throw new Error("MONGODB_URL is not defined");
+      throw new Error("MONGO_URI is not defined");
     }
     await mongoose.connect(MONGODB_URL);
     console.log("Connected to MongoDB");

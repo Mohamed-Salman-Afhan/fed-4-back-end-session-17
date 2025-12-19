@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 import { syncEnergyGenerationRecords } from '../application/background/sync-energy-generation-records';
+import { initializeBillingScheduler } from './scheduler/billing';
+import { initializeAnomalyDetectionJob } from "./scheduler/anomaly-detection";
 
 export const initializeScheduler = () => {
   // Run daily at 00:00 (midnight) - cron expression: '0 0 * * *'
@@ -16,4 +18,7 @@ export const initializeScheduler = () => {
   });
 
   console.log(`[Scheduler] Energy generation records sync scheduled for: ${schedule}`);
+
+  initializeBillingScheduler();
+  initializeAnomalyDetectionJob();
 };

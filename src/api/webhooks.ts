@@ -55,4 +55,43 @@ webhooksRouter.post(
   }
 );
 
+import Stripe from "stripe";
+import { InvoiceModel } from "../domain/models/invoice";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+
+webhooksRouter.post(
+  "/stripe",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig as string,
+        process.env.STRIPE_WEBHOOK_SECRET as string
+      );
+    } catch (err: any) {
+      console.error(`Webhook Error: ${err.message}`);
+      res.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.invoiceId) {
+        await InvoiceModel.findByIdAndUpdate(session.metadata.invoiceId, {
+          status: "PAID",
+          stripeSessionId: session.id,
+        });
+        console.log(`Invoice ${session.metadata.invoiceId} marked as PAID`);
+      }
+    }
+
+    res.send();
+  }
+);
+
 export default webhooksRouter;
